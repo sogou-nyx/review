@@ -1,5 +1,7 @@
 import threading
 import time
+from concurrent.futures.thread import ThreadPoolExecutor
+from concurrent.futures import FIRST_COMPLETED, as_completed, wait
 
 # def run():
 #     print('当前线程的名字是： ', threading.current_thread().name)
@@ -46,36 +48,52 @@ import time
 
 """Event模拟红绿灯，每隔五秒换颜色"""
 """一个车线程和一个信号灯线程，使用Event标记信号灯颜色，信号灯线程中操作Event，车线程根据Event状态判断是否可以通行"""
-event = threading.Event()
+# event = threading.Event()
 
-def lights():
-    count = 0
-    # 初始设置标记位，为绿灯
-    event.set()
-    while True:
-        if count <= 5:
-            print(f'light is green')
-        elif 5 < count <= 10:
-            event.clear()
-            print(f'light is red')
-        else:
-            event.set()
-            count = 0
+# def lights():
+#     count = 0
+#     # 初始设置标记位，为绿灯
+#     event.set()
+#     while True:
+#         if count <= 5:
+#             print(f'light is green')
+#         elif 5 < count <= 10:
+#             event.clear()
+#             print(f'light is red')
+#         else:
+#             event.set()
+#             count = 0
         
-        time.sleep(1)
-        count += 1
+#         time.sleep(1)
+#         count += 1
 
-def car(name):
-    while True:
-        if event.is_set():
-            print(f'{name} running')
-            time.sleep(1)
-        else:
-            print(f'{name} meets red light, wait')
-            event.wait()
-            print(f'light turns to green, {name} start running')
+# def car(name):
+#     while True:
+#         if event.is_set():
+#             print(f'{name} running')
+#             time.sleep(1)
+#         else:
+#             print(f'{name} meets red light, wait')
+#             event.wait()
+#             print(f'light turns to green, {name} start running')
 
-t1 = threading.Thread(target=lights)
-t2 = threading.Thread(target=car, args=('BMW',))
-t1.start()
-t2.start()
+# t1 = threading.Thread(target=lights)
+# t2 = threading.Thread(target=car, args=('BMW',))
+# t1.start()
+# t2.start()
+
+"""线程池"""
+def long_time_task(i: int):
+    print(f'thread: {threading.current_thread().name} start, sleep {i}s')
+    time.sleep(i)
+    print(f'thread: {threading.current_thread().name} finished')
+    return i
+
+if __name__ == '__main__':
+    with ThreadPoolExecutor(max_workers=5) as pool:
+        tasks = [pool.submit(long_time_task, i) for i in range(1, 6)]
+        wait(tasks, return_when=FIRST_COMPLETED)
+        
+        for task in as_completed(tasks):
+            res = task.result()
+            print(res)
